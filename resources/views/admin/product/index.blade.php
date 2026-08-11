@@ -1,0 +1,296 @@
+@extends('layouts.master', ['title' => 'Barang'])
+
+@section('content')
+    <x-container>
+        <div class="col-12">
+
+            <!-- Dua Kartu Informasi -->
+            <div class="row mb-4">
+                <!-- Card Jumlah Kategori -->
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="bg-primary text-white p-3 rounded me-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="icon">
+                                    <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                                    <path d="M2 17l10 5 10-5"></path>
+                                    <path d="M2 12l10 5 10-5"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="mb-1 text-muted">Kategori Barang</p>
+                                <h4 class="mb-0">{{ $categories->count() ?? 0 }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card Total Produk -->
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="bg-success text-white p-3 rounded me-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="icon">
+                                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                    <line x1="8" y1="21" x2="16" y2="21"></line>
+                                    <line x1="12" y1="17" x2="12" y2="21"></line>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="mb-1 text-muted">Total Barang</p>
+                                <h4 class="mb-0">{{ $products->total() ?? 0 }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Daftar Barang -->
+            <div class="card shadow-sm mb-4">
+                <!-- Header -->
+                <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-box-seam text-primary me-2"></i>
+                        <strong>DAFTAR BARANG</strong>
+                    </div>
+                    <!-- Tombol Tambah Barang -->
+                    @can('create-product')
+                        <x-button-modal id="create-product-modal" title="Tambah Barang" icon="plus"
+                            class="btn btn-primary btn-sm" style="" />
+                    @endcan
+                </div>
+
+                <!-- Body: Pencarian + Tabel + Pagination -->
+                <div class="card-body">
+                    
+                    <!-- Form Pencarian -->
+                    {{-- HAPUS FORM PENCARIAN LAMA ANDA, LALU LETAKKAN KODE INI DI ATAS CARD DAFTAR BARANG --}}
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <form action="{{ route('admin.product.index') }}" method="GET">
+                            <div class="row g-3 align-items-end">
+                                
+                                {{-- Filter Kategori --}}
+                                <div class="col-md-3">
+                                    <label for="category" class="form-label">Kategori</label>
+                                    <select name="category" id="category" class="form-select">
+                                        <option value="">Semua Kategori</option>
+                                        @foreach ($categories as $category)
+                                            <option value="{{ $category->id }}" {{ $filterCategory == $category->id ? 'selected' : '' }}>
+                                                {{ $category->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                {{-- Filter Tahun --}}
+                                <div class="col-md-3">
+                                    <label for="year" class="form-label">Tahun Pendaftaran Barang</label>
+                                    <select name="year" id="year" class="form-select">
+                                        <option value="">Semua Tahun</option>
+                                        @foreach ($years as $year)
+                                            <option value="{{ $year }}" {{ $filterYear == $year ? 'selected' : '' }}>
+                                                {{ $year }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                {{-- Input Pencarian Teks --}}
+                                <div class="col-md-4">
+                                    <label for="search" class="form-label">Cari Nama/Kode</label>
+                                    <input type="text" name="search" id="search" class="form-control" 
+                                        placeholder="Cari..." value="{{ $search ?? '' }}">
+                                </div>
+
+                                {{-- Tombol Aksi --}}
+                                <div class="col-md-2">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="fas fa-filter me-1"></i> Filter
+                                    </button>
+                                    <a href="{{ route('admin.product.index') }}" class="btn btn-secondary w-100 mt-2">Reset</a>
+                                </div>
+
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                    <!-- Tabel -->
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-3" id="productTable">
+                            <thead>
+                                <tr class="text-center">
+                                    <th>No</th>
+                                    <th>Tahun</th>
+                                    <th>Foto</th>
+                                    <th>Kode</th>
+                                    <th>Nama Barang</th>
+                                    <th>Nama Supplier</th>
+                                    <th>Kategori Barang</th>
+                                    <th>Satuan</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($products as $i => $product)
+                                    <tr class="searchable-row">
+                                        <td class="text-center">{{ $i + $products->firstItem() }}</td>
+
+                                        <td class="text-center">{{ $product->registered_at }}</td>
+                                        <td class="text-center">
+                                            <span class="avatar rounded avatar-md"
+                                                style="background-image: url({{ $product->image }})"></span>
+                                        </td>
+                                        <td class="text-center">{{ $product->code }}</td>
+                                        <td class="text-center">{{ $product->name }}</td>
+                                        <td class="text-center">{{ optional($product->supplier)->name ?? '-' }}</td>
+                                        <td class="text-center">{{ $product->category->name }}</td>
+                                        <td class="text-center">{{ $product->unit }}</td>
+                                        <td class="text-center">
+                                            @can('update-product')
+                                                <x-button-modal :id="'edit-product-modal-' . $product->id" title="" icon="edit"
+                                                    class="btn btn-info btn-sm me-1" style="" />
+
+                                                {{-- GANTI SELURUH BLOK MODAL EDIT ANDA DENGAN KODE INI --}}
+
+                                                <x-modal :id="'edit-product-modal-' . $product->id" title="Edit Barang - {{ $product->name }}">
+                                                    <form action="{{ route('admin.product.update', $product->id) }}" method="POST" enctype="multipart/form-data">
+                                                        @csrf
+                                                        @method('PUT')
+
+                                                        {{-- BAGIAN BARU UNTUK PREVIEW GAMBAR --}}
+                                                        <div class="mb-4 text-center">
+                                                            <span class="avatar rounded avatar-md"
+                                                                style="background-image: url('{{ asset($product->image) }}'); width: 200px; height: 200px;"></span>
+                                                        </div>
+                                                        <hr>
+                                                        
+                                                        <x-input name="name" type="text" title="Nama Barang" placeholder="Nama Barang" :value="$product->name" />
+                                                        
+                                                        <div class="row">
+                                                            <div class="col-md-6">
+                                                                <x-select title="Kategori Barang" name="category_id">
+                                                                    <option value="">Silahkan Pilih</option>
+                                                                    @foreach ($categories as $category)
+                                                                        <option value="{{ $category->id }}" @selected($product->category_id == $category->id)>
+                                                                            {{ $category->name }}
+                                                                        </option>
+                                                                    @endforeach
+                                                                </x-select>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <x-select title="Supplier Barang" name="supplier_id">
+                                                                    <option value="">Silahkan Pilih</option>
+                                                                    @foreach ($suppliers as $supplier)
+                                                                        <option value="{{ $supplier->id }}" @selected($product->supplier_id == $supplier->id)>
+                                                                            {{ $supplier->name }}
+                                                                        </option>
+                                                                    @endforeach
+                                                                </x-select>
+                                                            </div>
+                                                        </div>
+
+                                                        {{-- Kode yang Sudah Diperbaiki --}}
+                                                        <div class="row mt-3">
+                                                            <div class="col-md-4">
+                                                                <x-input name="image" type="file" title="Ganti Foto (Opsional)" />
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <x-input name="unit" type="text" title="Satuan" placeholder="Satuan Produk" :value="$product->unit" />
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                {{-- TAMBAHKAN INPUT TANGGAL DI SINI --}}
+                                                                <x-input name="registered_at" type="date" title="Tgl. Registrasi" :value="$product->registered_at" />
+                                                            </div>
+                                                        </div>
+
+                                                        <x-textarea name="description" title="Deskripsi Barang" placeholder="Deskripsi Barang">
+                                                            {{ $product->description }}
+                                                        </x-textarea>
+                                                        
+                                                        <x-button-save title="Simpan" icon="save" class="btn btn-primary mt-3" />
+                                                    </form>
+                                                </x-modal>
+                                            @endcan
+
+                                            @can('delete-product')
+                                                <x-button-delete :id="$product->id" :url="route('admin.product.destroy', $product->id)"
+                                                    title="" class="btn btn-danger btn-sm" />
+                                            @endcan
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr id="no-data-row">
+                                        <td colspan="9" class="text-center">Data barang tidak ditemukan.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="d-flex justify-content-end">
+                        {{ $products->links() }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </x-container>
+
+    {{-- Modal Tambah Barang --}}
+    <x-modal id="create-product-modal" title="Tambah Barang">
+        <form action="{{ route('admin.product.store') }}" method="POST" enctype="multipart/form-data">
+            @csrf
+            <x-input name="registered_at" type="date" title="Tanggal" :value="date('Y-m-d')" />
+            <x-input name="name" type="text" title="Nama Barang" placeholder="Nama Barang" :value="old('name')" />
+            @error('name')
+                <div class="invalid-feedback d-block">{{ $message }}</div>
+            @enderror
+            <x-input name="unit" type="text" title="Satuan Barang" placeholder="Satuan Barang" :value="old('unit')" />
+            @error('unit')
+                <div class="invalid-feedback d-block">{{ $message }}</div>
+            @enderror
+            <x-select title="Supplier Barang" name="supplier_id">
+                <option value="">Silahkan Pilih</option>
+                @foreach ($suppliers as $supplier)
+                    <option value="{{ $supplier->id }}" {{ old('supplier_id') == $supplier->id ? 'selected' : '' }}>
+                        {{ $supplier->name }}
+                    </option>
+                @endforeach
+            </x-select>
+            @error('supplier_id')
+                <div class="invalid-feedback d-block">{{ $message }}</div>
+            @enderror
+            <x-select title="Kategori Barang" name="category_id">
+                <option value="">Silahkan Pilih</option>
+                @foreach ($categories as $category)
+                    <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                        {{ $category->name }}
+                    </option>
+                @endforeach
+            </x-select>
+            @error('category_id')
+                <div class="invalid-feedback d-block">{{ $message }}</div>
+            @enderror
+            <x-input name="image" type="file" title="Foto Barang" />
+            @error('image')
+                <div class="invalid-feedback d-block">{{ $message }}</div>
+            @enderror
+            <x-textarea name="description" title="Deskripsi" placeholder="Deskripsi Barang">
+                {{ old('description') }}
+            </x-textarea>
+            @error('description')
+                <div class="invalid-feedback d-block">{{ $message }}</div>
+            @enderror
+            <div class="mt-3">
+                <x-button-save title="Simpan" icon="save" class="btn btn-primary" />
+            </div>
+        </form>
+    </x-modal>
+@endsection

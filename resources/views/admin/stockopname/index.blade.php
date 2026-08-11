@@ -1,0 +1,221 @@
+@extends('layouts.master', ['title' => 'Stok Opname'])
+
+@section('content')
+    <x-container>
+        <x-card title="Filter Data" class="card-body mb-3">
+            <form action="{{ route('admin.stockopname.index') }}" method="GET">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label for="month" class="form-label">Bulan</label>
+                        <select name="month" id="month" class="form-select">
+                            <option value="">Pilih Bulan</option> 
+                            @foreach (range(1, 12) as $month)
+                                <option value="{{ $month }}" {{ request('month') == $month ? 'selected' : '' }}>
+                                    {{ \Carbon\Carbon::create()->month($month)->monthName }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="year" class="form-label">Tahun</label>
+                        <select name="year" id="year" class="form-select">
+                            <option value="">Pilih Tahun</option>
+                            @foreach (range(now()->year, 2020) as $year)
+                                <option value="{{ $year }}" {{ request('year') == $year ? 'selected' : '' }}>
+                                    {{ $year }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">Filter</button>
+                    </div>
+                    <div class="col-md-2">
+                        <a href="{{ route('admin.stockopname.index') }}" class="btn btn-secondary w-100">Reset</a>
+                    </div>
+                </div>
+            </form>
+        </x-card>
+
+        {{-- ✅ INI BAGIAN YANG DIUBAH — TABEL UTAMA LOG STOK OPNAME --}}
+        <div class="card shadow-sm mb-4">
+            <!-- Header -->
+            <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-box-seam text-primary me-2"></i>
+                    <strong>DAFTAR SESI STOK OPNAME</strong>
+                </div>
+                <x-button-modal id="create-opname-modal" title="Mulai Stok Opname" icon="plus" 
+                    class="btn btn-primary btn-sm" style="" />
+            </div>
+
+            <!-- Body: Tabel + Pagination -->
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-3">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Judul Sesi</th>
+                                <th>Tanggal Dibuat</th>
+                                <th class="text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($sessions as $i => $session)
+                                <tr>
+                                    <td>{{ $sessions->firstItem() + $i }}</td>
+                                    <td>{{ $session->title }}</td>
+                                    <td>{{ $session->created_at->format('d-m-Y H:i') }}</td>
+                                    <td class="text-center">
+                                        <x-button-modal :id="'detail-modal-' . $session->id" title="Detail" icon="eye" style=""
+                                            class="btn btn-primary btn-sm" />
+                                        @can('delete-stockopname')
+                                        <x-button-delete :id="$session->id" :url="route('admin.stockopname.destroy', $session->id)"
+                                            class="btn btn-danger btn-sm" title=""/>
+                                        @endcan
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="text-center">Belum ada sesi stok opname.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex justify-content-end mt-3">{{ $sessions->links() }}</div>
+    </x-container>
+    
+    {{-- KUMPULAN MODAL DETAIL DIPINDAHKAN KE SINI (DI LUAR TABEL) --}}
+    @foreach ($sessions as $session)
+    <x-modal :id="'detail-modal-' . $session->id" title="Detail Log - {{ $session->title }}">
+        <div class="d-flex justify-content-end mb-3">
+            <a href="{{ route('admin.stockopname.pdf_detail', $session->id) }}" class="btn btn-success btn-sm" target="_blank">
+                <i class="fas fa-file-pdf"></i> Export PDF
+            </a>
+        </div>
+        
+        {{-- DIBUNGKUS DENGAN DIV UNTUK SCROLL --}}
+        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+            <x-table>
+                {{-- DITAMBAHKAN STYLE AGAR HEADER TETAP TERLIHAT SAAT SCROLL --}}
+                <thead style="position: sticky; top: 0; z-index: 1; background-color: white;">
+                    <tr>
+                        <th>No</th>
+                        <th>Kode</th>
+                        <th>Nama Barang</th>
+                        <th>Stok Sistem</th>
+                        <th>Stok Fisik</th>
+                        <th>Selisih</th>
+                        <th>Keterangan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($session->logs as $log)
+                        <tr>
+                            <td>{{ $loop->iteration }}</td>
+                            <td>{{ optional($log->product)->code }}</td>
+                            <td>{{ optional($log->product)->name }}</td>
+                            <td>{{ $log->stock_sistem }}</td>
+                            <td>{{ $log->stock_fisik }}</td>
+                            <td>{{ $log->selisih }}</td>
+                            <td>
+                                @if ($log->keterangan === 'Kelebihan')
+                                    <span class="badge bg-success">{{ $log->keterangan }}</span>
+                                @elseif ($log->keterangan === 'Kekurangan')
+                                    <span class="badge bg-danger">{{ $log->keterangan }}</span>
+                                @else
+                                    <span class="badge bg-secondary">{{ $log->keterangan }}</span>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="text-center">Tidak ada data log untuk sesi ini.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </x-table>
+        </div>
+    </x-modal>
+    @endforeach
+
+    {{-- Modal untuk membuat stok opname baru (posisinya sudah benar) --}}
+    <x-modal id="create-opname-modal" title="Mulai Stok Opname">
+        <form action="{{ route('admin.stockopname.store') }}" method="POST">
+            @csrf
+            {{-- Dropdown untuk Bulan dan Tahun Opname --}}
+            <div class="row mb-3">
+                <div class="col-6">
+                    <label for="opname_month" class="form-label">Bulan Opname</label>
+                    <select name="opname_month" id="opname_month" class="form-select">
+                        @foreach (range(1, 12) as $month)
+                            <option value="{{ $month }}" {{ now()->month == $month ? 'selected' : '' }}>
+                                {{ \Carbon\Carbon::create()->month($month)->monthName }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-6">
+                    <label for="opname_year" class="form-label">Tahun Opname</label>
+                    <select name="opname_year" id="opname_year" class="form-select">
+                        @foreach (range(now()->year, 2020) as $year)
+                            <option value="{{ $year }}" {{ now()->year == $year ? 'selected' : '' }}>
+                                {{ $year }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+            
+            {{-- Tabel Daftar Barang untuk Stok Fisik dengan SCROLL --}}
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <x-table>
+                    <thead style="position: sticky; top: 0; z-index: 1; background-color: white;">
+                        <tr>
+                            <th>No</th>
+                            <th>Nama Barang</th>
+                            <th>Kategori</th>
+                            <th>Stok Sistem</th>
+                            <th>Stok Fisik</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{-- Pastikan variabel $products tersedia di halaman ini --}}
+                        @forelse ($products as $i => $product)
+                        <tr>
+                            <td>{{ $i + 1 }}</td>
+                            <td>{{ $product->name }}</td>
+                            <td>{{ optional($product->category)->name }}</td>
+                            <td>{{ $product->quantity }}</td>
+                            <td>
+                                <input
+                                    type="number"
+                                    name="stock_fisik[{{ $product->id }}]"
+                                    value="{{ old('stock_fisik.' . $product->id, $product->quantity) }}"
+                                    class="form-control @error('stock_fisik.' . $product->id) is-invalid @enderror"
+                                    min="0"
+                                    required
+                                >
+                                @error('stock_fisik.' . $product->id)
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="5" class="text-center">Tidak ada produk untuk ditampilkan.</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </x-table>
+            </div>
+            <div class="mt-4 pt-3 border-top">
+                <button type="submit" class="btn btn-primary">Simpan Stok Opname</button>
+            </div>
+        </form>
+    </x-modal>
+@endsection
