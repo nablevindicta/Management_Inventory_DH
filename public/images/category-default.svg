@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="220" viewBox="0 0 320 220" role="img" aria-labelledby="title desc">
+  <title id="title">Gambar kategori default</title>
+  <desc id="desc">Ikon kotak penyimpanan berwarna biru</desc>
+  <rect width="320" height="220" fill="#e8f1ff"/>
+  <rect x="83" y="76" width="154" height="96" rx="12" fill="#206bc4"/>
+  <path d="M78 76 160 40l82 36-82 37z" fill="#4299e1"/>
+  <path d="M160 113v59M112 96v21M208 96v21" stroke="#fff" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="160" cy="143" r="8" fill="#e8f1ff"/>
+</svg>

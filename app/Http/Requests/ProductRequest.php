@@ -17,7 +17,7 @@ class ProductRequest extends FormRequest
         $rules = [
             'category_id' => 'required|exists:categories,id',
             'description' => 'nullable|string',
-            'unit'        => 'required|string',
+            'unit'        => ['required', Rule::in(['pcs', 'rim', 'box'])],
             'supplier_id' => 'required|exists:suppliers,id',
             'registered_at' => 'nullable|date', 
 
@@ -55,6 +55,7 @@ class ProductRequest extends FormRequest
             'supplier_id.required' => 'Supplier wajib dipilih.', 
             'supplier_id.exists'   => 'Supplier yang dipilih tidak valid.',
             'unit.required'        => 'Satuan (unit) wajib diisi.',
+            'unit.in'              => 'Satuan harus pcs, rim, atau box.',
         ];
     }
 }

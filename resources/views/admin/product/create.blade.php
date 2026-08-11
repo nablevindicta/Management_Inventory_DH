@@ -9,7 +9,12 @@
                         @csrf
 
                         <x-input name="name" type="text" title="Nama Barang" placeholder="Nama Barang" :value="old('name')" />
-                        <x-input name="unit" type="text" title="Satuan Barang" placeholder="Satuan Barang" :value="old('unit')" />
+                        <x-select title="Satuan Barang" name="unit">
+                            <option value="">Silahkan Pilih</option>
+                            @foreach (['pcs', 'rim', 'box'] as $unit)
+                                <option value="{{ $unit }}" @selected(old('unit') === $unit)>{{ strtoupper($unit) }}</option>
+                            @endforeach
+                        </x-select>
 
                         <x-select title="Supplier Barang" name="supplier_id">
                             <option value="">Silahkan Pilih</option>

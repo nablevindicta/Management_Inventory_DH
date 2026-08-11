@@ -41,11 +41,13 @@ class CategoryController extends Controller
      */
     public function store(CategoryRequest $request)
     {
-        $image = $this->uploadImage($request, $path = 'public/categories/', $name = 'image');
+        $image = $request->image_source === 'upload'
+            ? $this->uploadImage($request, $path = 'public/categories/', $name = 'image')
+            : null;
 
         Category::create([
             'name' => $request->name,
-            'image' => $image->hashName(),
+            'image' => $image?->hashName() ?? Category::DEFAULT_IMAGE,
         ]);
 
         return back()->with('toast_success', 'Kategori Berhasil Ditambahkan');
@@ -92,8 +94,9 @@ class CategoryController extends Controller
         // 3. Jika tidak ada produk terkait, lanjutkan proses penghapusan
         try {
             // Hapus gambar kategori dari storage jika ada
-            if ($category->image) {
-                Storage::disk('public')->delete('categories/' . $category->image);
+            $image = $category->getRawOriginal('image');
+            if ($image && $image !== Category::DEFAULT_IMAGE) {
+                Storage::disk('public')->delete('categories/' . $image);
             }
 
             // Hapus data kategori dari database

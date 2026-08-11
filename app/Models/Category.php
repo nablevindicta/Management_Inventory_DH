@@ -11,6 +11,8 @@ class Category extends Model
 {
     use HasFactory, HasSlug;
 
+    public const DEFAULT_IMAGE = 'default-category.svg';
+
     protected $guarded = [];
 
     public function products()
@@ -21,7 +23,9 @@ class Category extends Model
     protected function image(): Attribute
     {
         return Attribute::make(
-            get: fn($image) => asset('storage/categories/' . $image),
+            get: fn($image) => empty($image) || $image === self::DEFAULT_IMAGE
+                ? asset('images/category-default.svg')
+                : asset('storage/categories/' . $image),
         );
     }
 }

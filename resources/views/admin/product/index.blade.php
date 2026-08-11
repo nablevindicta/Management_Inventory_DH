@@ -202,7 +202,11 @@
                                                                 <x-input name="image" type="file" title="Ganti Foto (Opsional)" />
                                                             </div>
                                                             <div class="col-md-4">
-                                                                <x-input name="unit" type="text" title="Satuan" placeholder="Satuan Produk" :value="$product->unit" />
+                                                                <x-select title="Satuan" name="unit">
+                                                                    @foreach (['pcs', 'rim', 'box'] as $unit)
+                                                                        <option value="{{ $unit }}" @selected($product->unit === $unit)>{{ strtoupper($unit) }}</option>
+                                                                    @endforeach
+                                                                </x-select>
                                                             </div>
                                                             <div class="col-md-4">
                                                                 {{-- TAMBAHKAN INPUT TANGGAL DI SINI --}}
@@ -252,7 +256,12 @@
             @error('name')
                 <div class="invalid-feedback d-block">{{ $message }}</div>
             @enderror
-            <x-input name="unit" type="text" title="Satuan Barang" placeholder="Satuan Barang" :value="old('unit')" />
+            <x-select title="Satuan Barang" name="unit">
+                <option value="">Silahkan Pilih</option>
+                @foreach (['pcs', 'rim', 'box'] as $unit)
+                    <option value="{{ $unit }}" @selected(old('unit') === $unit)>{{ strtoupper($unit) }}</option>
+                @endforeach
+            </x-select>
             @error('unit')
                 <div class="invalid-feedback d-block">{{ $message }}</div>
             @enderror

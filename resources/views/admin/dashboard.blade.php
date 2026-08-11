@@ -216,6 +216,59 @@
             </div>
         </div>
 
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-activity text-primary me-2"></i>
+                    <strong>PEMANTAUAN RESOURCE</strong>
+                </div>
+                <small class="text-muted">Diperbarui: {{ $resourceStats['checked_at'] }}</small>
+            </div>
+            <div class="card-body p-3">
+                <div class="row g-3">
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="border rounded p-3 h-100">
+                            <div class="text-muted small">Memori proses</div>
+                            <div class="h4 mb-0">{{ $resourceStats['process_memory'] }}</div>
+                            <small class="text-muted">Saat dashboard dimuat</small>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="border rounded p-3 h-100">
+                            <div class="text-muted small">Batas memori PHP</div>
+                            <div class="h4 mb-0">{{ $resourceStats['php_memory_limit'] }}</div>
+                            <small class="text-muted">Konfigurasi server PHP</small>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="border rounded p-3 h-100">
+                            <div class="text-muted small">Ukuran database SQLite</div>
+                            <div class="h4 mb-0">{{ $resourceStats['database_size'] }}</div>
+                            <small class="text-muted">File database aplikasi</small>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="border rounded p-3 h-100">
+                            <div class="text-muted small">Ruang penyimpanan tersedia</div>
+                            <div class="h4 mb-0">{{ $resourceStats['disk_free'] }}</div>
+                            <small class="text-muted">dari {{ $resourceStats['disk_total'] }}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between small text-muted mb-1">
+                        <span>Pemakaian penyimpanan</span>
+                        <span>{{ $resourceStats['disk_percent'] }}%</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar {{ $resourceStats['disk_percent'] >= 90 ? 'bg-danger' : ($resourceStats['disk_percent'] >= 75 ? 'bg-warning' : 'bg-success') }}"
+                            role="progressbar" style="width: {{ min($resourceStats['disk_percent'], 100) }}%"
+                            aria-valuenow="{{ $resourceStats['disk_percent'] }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Row 3: Tabel Stok Rendah (Sejajar) -->
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-white border-bottom">

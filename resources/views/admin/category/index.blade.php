@@ -67,7 +67,7 @@
                                                         @method('PUT')
                                                         <div class="mb-4 text-center">
                                                             <span class="avatar rounded avatar-md"
-                                                                style="background-image: url('{{ asset($category->image) }}'); width: 200px; height: 200px;"></span>
+                                                                style="background-image: url('{{ $category->image }}'); width: 200px; height: 200px;"></span>
                                                         </div>        
                                                         <hr>
                                                         <x-input name="name" type="text" title="Nama Kategori"
@@ -115,7 +115,28 @@
                             @csrf
                             <x-input name="name" type="text" title="Nama Kategori" placeholder="Nama Kategori"
                                 :value="old('name')" />
-                            <x-input name="image" type="file" title="Foto Kategori" placeholder="" :value="old('image')" />
+                            <div class="mb-3">
+                                <label class="form-label d-block">Foto Kategori</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="image_source" id="image-source-default"
+                                        value="default" {{ old('image_source', 'default') === 'default' ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="image-source-default">Gunakan gambar default</label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="image_source" id="image-source-upload"
+                                        value="upload" {{ old('image_source') === 'upload' ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="image-source-upload">Unggah gambar sendiri</label>
+                                </div>
+                                <input type="file" name="image" id="category-image" accept=".png,.jpg,.jpeg"
+                                    class="form-control @error('image') is-invalid @enderror">
+                                @error('image_source')
+                                    <div class="text-danger small mt-1">{{ $message }}</div>
+                                @enderror
+                                @error('image')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small class="text-muted">Unggahan maksimal 2 MB, format PNG/JPG/JPEG.</small>
+                            </div>
                             <x-button-save title="Simpan" icon="save" class="btn btn-primary" />
                         </form>
                     </div>
@@ -124,3 +145,24 @@
         @endcan
     </x-container>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const imageInput = document.getElementById('category-image');
+        const uploadOption = document.getElementById('image-source-upload');
+        const sourceOptions = document.querySelectorAll('input[name="image_source"]');
+
+        function toggleImageInput() {
+            imageInput.disabled = !uploadOption.checked;
+            if (imageInput.disabled) imageInput.value = '';
+        }
+
+        sourceOptions.forEach(function (option) {
+            option.addEventListener('change', toggleImageInput);
+        });
+
+        toggleImageInput();
+    });
+</script>
+@endpush

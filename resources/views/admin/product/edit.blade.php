@@ -35,8 +35,11 @@
                                 <x-input name="image" type="file" title="Foto Produk" placeholder="" :value="$product->image" />
                             </div>
                             <div class="col-6">
-                                <x-input name="unit" type="text" title="Satuan Produk" placeholder="Satuan Produk"
-                                    :value="$product->unit" />
+                                <x-select title="Satuan Produk" name="unit">
+                                    @foreach (['pcs', 'rim', 'box'] as $unit)
+                                        <option value="{{ $unit }}" @selected($product->unit === $unit)>{{ strtoupper($unit) }}</option>
+                                    @endforeach
+                                </x-select>
                             </div>
                         </div>
                         <x-textarea name="description" title="Deskripsi Produk" placeholder="Deskripsi Produk">

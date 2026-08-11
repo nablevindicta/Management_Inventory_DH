@@ -87,6 +87,24 @@ class DashboardController extends Controller
             $total = [1];
         }
 
+        $connection = config('database.default');
+        $databasePath = config("database.connections.{$connection}.database");
+        $databaseDirectory = is_string($databasePath) ? dirname($databasePath) : database_path();
+        $diskTotal = @disk_total_space($databaseDirectory) ?: 0;
+        $diskFree = @disk_free_space($databaseDirectory) ?: 0;
+
+        $resourceStats = [
+            'process_memory' => $this->formatBytes(memory_get_usage(true)),
+            'php_memory_limit' => ini_get('memory_limit') ?: 'Tidak dibatasi',
+            'database_size' => is_string($databasePath) && is_file($databasePath)
+                ? $this->formatBytes(filesize($databasePath))
+                : 'Database tidak ditemukan',
+            'disk_free' => $this->formatBytes($diskFree),
+            'disk_total' => $this->formatBytes($diskTotal),
+            'disk_percent' => $diskTotal > 0 ? round((($diskTotal - $diskFree) / $diskTotal) * 100, 1) : 0,
+            'checked_at' => now()->format('d-m-Y H:i:s'),
+        ];
+
         return view('admin.dashboard', compact(
             'categories',
             'suppliers',
@@ -99,7 +117,17 @@ class DashboardController extends Controller
             'productsOutStock',
             'label',
             'total',
-            'search' 
+            'search',
+            'resourceStats'
         ));
+    }
+
+    private function formatBytes($bytes): string
+    {
+        $bytes = max(0, (float) $bytes);
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $power = $bytes > 0 ? min((int) floor(log($bytes, 1024)), count($units) - 1) : 0;
+
+        return number_format($bytes / (1024 ** $power), $power === 0 ? 0 : 2) . ' ' . $units[$power];
     }
 }
