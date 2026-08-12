@@ -222,46 +222,50 @@
                     <i class="bi bi-activity text-primary me-2"></i>
                     <strong>PEMANTAUAN RESOURCE</strong>
                 </div>
-                <small class="text-muted">Diperbarui: {{ $resourceStats['checked_at'] }}</small>
+                <small class="text-muted">Waktu: <span id="resource-checked-at">{{ $resourceStats['checked_at'] }}</span></small>
             </div>
             <div class="card-body p-3">
                 <div class="row g-3">
                     <div class="col-sm-6 col-lg-3">
                         <div class="border rounded p-3 h-100">
                             <div class="text-muted small">Memori proses</div>
-                            <div class="h4 mb-0">{{ $resourceStats['process_memory'] }}</div>
-                            <small class="text-muted">Saat dashboard dimuat</small>
+                            <div class="h4 mb-0" id="resource-process-memory">{{ $resourceStats['process_memory'] }}</div>
+                            <small class="text-muted">Riwayat 60 detik</small>
+                            <div id="resource-chart-process-memory" class="resource-mini-chart" aria-label="Diagram memori proses"></div>
                         </div>
                     </div>
                     <div class="col-sm-6 col-lg-3">
                         <div class="border rounded p-3 h-100">
                             <div class="text-muted small">Batas memori PHP</div>
-                            <div class="h4 mb-0">{{ $resourceStats['php_memory_limit'] }}</div>
-                            <small class="text-muted">Konfigurasi server PHP</small>
+                            <div class="h4 mb-0" id="resource-php-memory-limit">{{ $resourceStats['php_memory_limit'] }}</div>
+                            <small class="text-muted">Riwayat 60 detik</small>
+                            <div id="resource-chart-php-memory-limit" class="resource-mini-chart" aria-label="Diagram batas memori PHP"></div>
                         </div>
                     </div>
                     <div class="col-sm-6 col-lg-3">
                         <div class="border rounded p-3 h-100">
                             <div class="text-muted small">Ukuran database SQLite</div>
-                            <div class="h4 mb-0">{{ $resourceStats['database_size'] }}</div>
-                            <small class="text-muted">File database aplikasi</small>
+                            <div class="h4 mb-0" id="resource-database-size">{{ $resourceStats['database_size'] }}</div>
+                            <small class="text-muted">Riwayat 60 detik</small>
+                            <div id="resource-chart-database-size" class="resource-mini-chart" aria-label="Diagram ukuran database"></div>
                         </div>
                     </div>
                     <div class="col-sm-6 col-lg-3">
                         <div class="border rounded p-3 h-100">
                             <div class="text-muted small">Ruang penyimpanan tersedia</div>
-                            <div class="h4 mb-0">{{ $resourceStats['disk_free'] }}</div>
-                            <small class="text-muted">dari {{ $resourceStats['disk_total'] }}</small>
+                            <div class="h4 mb-0" id="resource-disk-free">{{ $resourceStats['disk_free'] }}</div>
+                            <small class="text-muted">dari <span id="resource-disk-total">{{ $resourceStats['disk_total'] }}</span></small>
+                            <div id="resource-chart-disk-free" class="resource-mini-chart" aria-label="Diagram ruang penyimpanan tersedia"></div>
                         </div>
                     </div>
                 </div>
                 <div class="mt-3">
                     <div class="d-flex justify-content-between small text-muted mb-1">
                         <span>Pemakaian penyimpanan</span>
-                        <span>{{ $resourceStats['disk_percent'] }}%</span>
+                        <span id="resource-disk-percent">{{ $resourceStats['disk_percent'] }}%</span>
                     </div>
                     <div class="progress" style="height: 8px;">
-                        <div class="progress-bar {{ $resourceStats['disk_percent'] >= 90 ? 'bg-danger' : ($resourceStats['disk_percent'] >= 75 ? 'bg-warning' : 'bg-success') }}"
+                        <div id="resource-disk-bar" class="progress-bar {{ $resourceStats['disk_percent'] >= 90 ? 'bg-danger' : ($resourceStats['disk_percent'] >= 75 ? 'bg-warning' : 'bg-success') }}"
                             role="progressbar" style="width: {{ min($resourceStats['disk_percent'], 100) }}%"
                             aria-valuenow="{{ $resourceStats['disk_percent'] }}" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
@@ -380,6 +384,10 @@
         width: 32px;
         height: 32px;
     }
+    .resource-mini-chart {
+        height: 58px;
+        margin-top: 0.5rem;
+    }
     /* Pastikan semua konten sejajar */
     .container-fluid,
     .position-absolute {
@@ -409,5 +417,96 @@
         // Redirect
         window.location.href = url.toString();
     }
+
+    const resourceUrl = @json(route('admin.dashboard.resources'));
+    const resourceMetricCharts = {};
+
+    function createResourceMiniChart(elementId, initialValue, color) {
+        const history = [{ x: Date.now(), y: Number(initialValue) || 0 }];
+        const chart = new ApexCharts(document.getElementById(elementId), {
+            chart: {
+                type: 'area',
+                height: 58,
+                sparkline: { enabled: true },
+                animations: { enabled: true, easing: 'linear', dynamicAnimation: { speed: 300 } }
+            },
+            series: [{ data: history }],
+            colors: [color],
+            stroke: { curve: 'smooth', width: 2 },
+            fill: { type: 'gradient', gradient: { opacityFrom: 0.3, opacityTo: 0.03 } },
+            tooltip: { x: { format: 'HH:mm:ss' } }
+        });
+
+        chart.render();
+        return { chart, history };
+    }
+
+    resourceMetricCharts.processMemory = createResourceMiniChart(
+        'resource-chart-process-memory', @json($resourceStats['process_memory_bytes']), '#206bc4'
+    );
+    resourceMetricCharts.phpMemoryLimit = createResourceMiniChart(
+        'resource-chart-php-memory-limit', @json($resourceStats['php_memory_limit_bytes']), '#6f42c1'
+    );
+    resourceMetricCharts.databaseSize = createResourceMiniChart(
+        'resource-chart-database-size', @json($resourceStats['database_size_bytes']), '#2fb344'
+    );
+    resourceMetricCharts.diskFree = createResourceMiniChart(
+        'resource-chart-disk-free', @json($resourceStats['disk_free_bytes']), '#f59f00'
+    );
+
+    function updateResourceChart(metric, value) {
+        metric.history.push({ x: Date.now(), y: Number(value) || 0 });
+        if (metric.history.length > 60) metric.history.shift();
+        metric.chart.updateSeries([{ data: metric.history }]);
+    }
+
+    function updateResourceClock() {
+        document.getElementById('resource-checked-at').textContent = new Intl.DateTimeFormat('id-ID', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        }).format(new Date()).replaceAll('.', ':');
+    }
+
+    async function refreshResourceStats() {
+        try {
+            const response = await fetch(resourceUrl, {
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin',
+                cache: 'no-store'
+            });
+
+            if (!response.ok) return;
+
+            const stats = await response.json();
+            document.getElementById('resource-process-memory').textContent = stats.process_memory;
+            document.getElementById('resource-php-memory-limit').textContent = stats.php_memory_limit;
+            document.getElementById('resource-database-size').textContent = stats.database_size;
+            document.getElementById('resource-disk-free').textContent = stats.disk_free;
+            document.getElementById('resource-disk-total').textContent = stats.disk_total;
+            document.getElementById('resource-disk-percent').textContent = stats.disk_percent + '%';
+            const diskBar = document.getElementById('resource-disk-bar');
+            diskBar.style.width = Math.min(stats.disk_percent, 100) + '%';
+            diskBar.setAttribute('aria-valuenow', stats.disk_percent);
+            diskBar.classList.remove('bg-success', 'bg-warning', 'bg-danger');
+            diskBar.classList.add(stats.disk_percent >= 90 ? 'bg-danger' : (stats.disk_percent >= 75 ? 'bg-warning' : 'bg-success'));
+
+            updateResourceChart(resourceMetricCharts.processMemory, stats.process_memory_bytes);
+            updateResourceChart(resourceMetricCharts.phpMemoryLimit, stats.php_memory_limit_bytes);
+            updateResourceChart(resourceMetricCharts.databaseSize, stats.database_size_bytes);
+            updateResourceChart(resourceMetricCharts.diskFree, stats.disk_free_bytes);
+        } catch (error) {
+            // Pemantauan akan mencoba lagi pada siklus berikutnya.
+        }
+    }
+
+    updateResourceClock();
+    setInterval(updateResourceClock, 1000);
+    refreshResourceStats();
+    setInterval(refreshResourceStats, 1000);
 </script>
 @endpush

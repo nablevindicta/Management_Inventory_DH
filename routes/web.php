@@ -55,6 +55,10 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'r
         ->name('dashboard')
         ->middleware('permission:index-dashboard');
 
+    Route::get('/dashboard/resources', [DashboardController::class, 'resources'])
+        ->name('dashboard.resources')
+        ->middleware('permission:index-dashboard');
+
     Route::resource('/category', CategoryController::class)
         ->except('show', 'create', 'edit')
         ->middleware('permission:index-category');

@@ -87,23 +87,7 @@ class DashboardController extends Controller
             $total = [1];
         }
 
-        $connection = config('database.default');
-        $databasePath = config("database.connections.{$connection}.database");
-        $databaseDirectory = is_string($databasePath) ? dirname($databasePath) : database_path();
-        $diskTotal = @disk_total_space($databaseDirectory) ?: 0;
-        $diskFree = @disk_free_space($databaseDirectory) ?: 0;
-
-        $resourceStats = [
-            'process_memory' => $this->formatBytes(memory_get_usage(true)),
-            'php_memory_limit' => ini_get('memory_limit') ?: 'Tidak dibatasi',
-            'database_size' => is_string($databasePath) && is_file($databasePath)
-                ? $this->formatBytes(filesize($databasePath))
-                : 'Database tidak ditemukan',
-            'disk_free' => $this->formatBytes($diskFree),
-            'disk_total' => $this->formatBytes($diskTotal),
-            'disk_percent' => $diskTotal > 0 ? round((($diskTotal - $diskFree) / $diskTotal) * 100, 1) : 0,
-            'checked_at' => now()->format('d-m-Y H:i:s'),
-        ];
+        $resourceStats = $this->getResourceStats();
 
         return view('admin.dashboard', compact(
             'categories',
@@ -120,6 +104,52 @@ class DashboardController extends Controller
             'search',
             'resourceStats'
         ));
+    }
+
+    public function resources()
+    {
+        return response()->json($this->getResourceStats());
+    }
+
+    private function getResourceStats(): array
+    {
+        $connection = config('database.default');
+        $databasePath = config("database.connections.{$connection}.database");
+        $databaseDirectory = is_string($databasePath) ? dirname($databasePath) : database_path();
+        $diskTotal = @disk_total_space($databaseDirectory) ?: 0;
+        $diskFree = @disk_free_space($databaseDirectory) ?: 0;
+        $processMemory = memory_get_usage(true);
+        $phpMemoryLimit = ini_get('memory_limit') ?: 'Tidak dibatasi';
+        $databaseSize = is_string($databasePath) && is_file($databasePath) ? filesize($databasePath) : 0;
+
+        return [
+            'process_memory' => $this->formatBytes($processMemory),
+            'process_memory_bytes' => $processMemory,
+            'php_memory_limit' => $phpMemoryLimit,
+            'php_memory_limit_bytes' => $this->iniSizeToBytes($phpMemoryLimit),
+            'database_size' => $databaseSize > 0
+                ? $this->formatBytes($databaseSize)
+                : 'Database tidak ditemukan',
+            'database_size_bytes' => $databaseSize,
+            'disk_free' => $this->formatBytes($diskFree),
+            'disk_free_bytes' => $diskFree,
+            'disk_total' => $this->formatBytes($diskTotal),
+            'disk_percent' => $diskTotal > 0 ? round((($diskTotal - $diskFree) / $diskTotal) * 100, 1) : 0,
+            'checked_at' => now()->format('d-m-Y H:i:s'),
+        ];
+    }
+
+    private function iniSizeToBytes(string $value): int
+    {
+        if ($value === '-1') {
+            return 0;
+        }
+
+        $unit = strtolower(substr($value, -1));
+        $number = (float) $value;
+        $multipliers = ['g' => 1024 ** 3, 'm' => 1024 ** 2, 'k' => 1024];
+
+        return (int) ($number * ($multipliers[$unit] ?? 1));
     }
 
     private function formatBytes($bytes): string
